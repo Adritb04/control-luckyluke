@@ -996,9 +996,159 @@
     .month-label { min-width: 110px; font-size: 14px; }
     .year-grid { grid-template-columns: 1fr; }
   }
+
+  /* ══ LOGIN SCREEN ══ */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--black);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    padding: 24px;
+  }
+  #loginScreen.hidden { display: none; }
+
+  .login-box {
+    width: 100%; max-width: 380px;
+    background: var(--black2);
+    border: 1px solid var(--border2);
+    border-top: 3px solid var(--red);
+    padding: 36px 32px 28px;
+  }
+  .login-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 3px;
+    color: var(--white); margin-bottom: 4px;
+  }
+  .login-logo span { color: var(--red2); }
+  .login-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: var(--grey3);
+    letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .login-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--grey3); margin-bottom: 5px; display: block;
+  }
+  .login-input {
+    width: 100%; padding: 11px 14px;
+    background: var(--black4);
+    border: 1px solid var(--border2);
+    color: var(--white);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px; outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.15s;
+  }
+  .login-input:focus { border-color: var(--red2); background: var(--black3); }
+  .login-input::placeholder { color: var(--grey2); font-size: 12px; }
+
+  .login-btn-row { display: flex; gap: 8px; margin-top: 6px; }
+  .login-btn {
+    flex: 1; padding: 12px 8px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; letter-spacing: 1px;
+    border: none; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .login-btn:hover { opacity: 0.85; }
+  .login-btn-upload   { background: var(--red); color: var(--white); }
+  .login-btn-download { background: var(--black4); color: var(--offwhite); border: 1px solid var(--border2); }
+  .login-btn-skip     { background: transparent; color: var(--grey3); border: 1px solid var(--border2); font-size: 13px; }
+
+  .login-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0 14px;
+  }
+  .login-divider::before, .login-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border2);
+  }
+  .login-divider span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; color: var(--grey2); text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  .login-status {
+    margin-top: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; padding: 10px 12px;
+    display: none;
+  }
+  .login-status.ok  { background: var(--green-pale); border-left: 2px solid var(--green); color: var(--green); }
+  .login-status.err { background: var(--red-pale);   border-left: 2px solid var(--red3);  color: var(--red3); }
+
+  .login-spinner {
+    display: none; align-items: center; gap: 10px;
+    margin-top: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--grey3);
+  }
+  .login-spinner.show { display: flex; }
+
+  .login-user-badge {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--black4); border: 1px solid var(--border2);
+    padding: 10px 14px; margin-bottom: 16px;
+  }
+  .login-user-badge span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--offwhite);
+  }
+  .login-user-badge button {
+    background: none; border: none; color: var(--grey3);
+    font-size: 11px; cursor: pointer; font-family: 'IBM Plex Mono', monospace;
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">MI<span>RESTAURANTE</span></div>
+    <div class="login-sub">Control Financiero 2026</div>
+
+    <div id="loginUserBadge" class="login-user-badge" style="display:none">
+      <span id="loginUserName"></span>
+      <button onclick="loginLogout()">Cambiar usuario</button>
+    </div>
+
+    <div id="loginFields">
+      <label class="login-label">Usuario</label>
+      <input class="login-input" type="text" id="loginUser" placeholder="Ej: mirestaurante"
+        autocomplete="username" spellcheck="false"
+        onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
+
+      <label class="login-label">Contraseña</label>
+      <input class="login-input" type="password" id="loginPass" placeholder="Mínimo 4 caracteres"
+        autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') loginAction('download')">
+    </div>
+
+    <div class="login-btn-row">
+      <button class="login-btn login-btn-download" onclick="loginAction('download')">📲 ENTRAR Y SINCRONIZAR</button>
+    </div>
+    <div class="login-btn-row" style="margin-top:6px">
+      <button class="login-btn login-btn-upload" onclick="loginAction('upload')">☁️ SUBIR MIS DATOS</button>
+    </div>
+
+    <div class="login-divider"><span>o</span></div>
+
+    <div class="login-btn-row">
+      <button class="login-btn login-btn-skip" onclick="loginSkip()">Continuar sin sincronizar →</button>
+    </div>
+
+    <div class="login-spinner" id="loginSpinner">
+      <div class="spinner-ring"></div>
+      <span id="loginSpinnerMsg">Conectando...</span>
+    </div>
+    <div class="login-status" id="loginStatus"></div>
+  </div>
+</div>
+
 
 <!-- CHART VIEW -->
 <div class="chart-view" id="chartView">
@@ -1189,14 +1339,56 @@ let curYear = 2026;
 let curMon  = (today.getFullYear() === 2026) ? today.getMonth() : 0;
 let selDate = null;
 
-function save() { localStorage.setItem('rest2026', JSON.stringify(appData)); }
-function key(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function save() {
+  localStorage.setItem('rest2026', JSON.stringify(appData));
+  cloudAutoSave();
+}
+function saveBank(){
+  localStorage.setItem('rest2026_bank', JSON.stringify(bankData));
+  cloudAutoSave();
+}
+
+// Debounced auto-save to Supabase — fires 1.5s after last change
+let _autoSaveTimer = null;
+function cloudAutoSave(){
+  const hash = localStorage.getItem('rest2026_hash');
+  if(!hash) return; // not logged in yet
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(async ()=>{
+    try {
+      await sbRequest('POST', 'sync_data', {
+        user_id:    hash,
+        payload:    JSON.stringify(buildPayload()),
+        updated_at: new Date().toISOString()
+      });
+      showSaveIndicator('✓ Guardado');
+    } catch(e){
+      showSaveIndicator('⚠ Sin conexión — guardado local', true);
+    }
+  }, 1500);
+}
+
+function showSaveIndicator(msg, isWarn=false){
+  let el = document.getElementById('saveIndicator');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'saveIndicator';
+    el.style.cssText = 'position:fixed;bottom:70px;right:16px;z-index:999;font-family:"IBM Plex Mono",monospace;font-size:10px;padding:5px 10px;border-radius:2px;transition:opacity 0.4s;pointer-events:none';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background  = isWarn ? '#2a1a00' : '#051a0d';
+  el.style.color        = isWarn ? '#ffaa44' : '#22aa55';
+  el.style.border       = isWarn ? '1px solid #884400' : '1px solid #1a8844';
+  el.style.opacity      = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.style.opacity='0'; }, 2500);
+}function key(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
 function dayData(k){ if(!appData[k]) appData[k]={income:[],expense:[]}; return appData[k]; }
 function fmt(n){ return '$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 // Bank balance helpers
-const bankData = JSON.parse(localStorage.getItem('rest2026_bank') || '{}');
-function saveBank(){ localStorage.setItem('rest2026_bank', JSON.stringify(bankData)); }
+const bankData = JSON.parse(localStorage.getItem('rest2026_bank') || '{}')
 
 function setBankBalance(k, amount){
   bankData[k] = amount;
@@ -2260,8 +2452,92 @@ document.getElementById('exportModal').addEventListener('click', function(e){
 });
 
 function renderAll(){ renderMonthTabs(); renderCalendar(); }
-renderAll();
+/* ══════════════════════════════════════
+   LOGIN SCREEN
+══════════════════════════════════════ */
+function loginSkip(){
+  document.getElementById('loginScreen').classList.add('hidden');
+}
+function loginLogout(){
+  localStorage.removeItem('rest2026_syncuser');
+  document.getElementById('loginUserBadge').style.display = 'none';
+  document.getElementById('loginFields').style.display    = 'block';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginStatus').style.display = 'none';
+}
+function loginShowSpinner(msg){
+  const s = document.getElementById('loginSpinner');
+  document.getElementById('loginSpinnerMsg').textContent = msg;
+  s.classList.add('show');
+  document.getElementById('loginStatus').style.display = 'none';
+}
+function loginHideSpinner(){ document.getElementById('loginSpinner').classList.remove('show'); }
+function loginShowStatus(msg, isErr=false){
+  loginHideSpinner();
+  const el = document.getElementById('loginStatus');
+  el.textContent   = msg;
+  el.className     = 'login-status ' + (isErr ? 'err' : 'ok');
+  el.style.display = 'block';
+}
+async function loginAction(action){
+  const user = (document.getElementById('loginUser').value||
+                document.getElementById('loginUserName').textContent.replace('👤 ','')||'').trim().toLowerCase();
+  const pass = (document.getElementById('loginPass').value||'').trim();
+  if(!user){ loginShowStatus('✗ Escribe un nombre de usuario', true); return; }
+  if(pass.length < 4){ loginShowStatus('✗ La contraseña debe tener mínimo 4 caracteres', true); return; }
+  localStorage.setItem('rest2026_syncuser', user);
+  const syncU = document.getElementById('syncUser');
+  if(syncU) syncU.value = user;
 
+  loginShowSpinner(action === 'upload' ? 'Subiendo datos...' : 'Descargando datos...');
+
+  try {
+    const hash = await hashCreds(user, pass);
+    localStorage.setItem('rest2026_hash', hash); // enable auto-save
+
+    if(action === 'upload'){
+      const payload = buildPayload();
+      await sbRequest('POST', 'sync_data', {
+        user_id: hash, payload: JSON.stringify(payload),
+        updated_at: new Date().toISOString()
+      });
+      const days = Object.keys(appData).filter(k=>appData[k].income.length||appData[k].expense.length).length;
+      loginShowStatus('✓ Datos subidos — ' + days + ' días guardados');
+      setTimeout(loginSkip, 1500);
+
+    } else {
+      const rows = await sbRequest('GET', 'sync_data?user_id=eq.' + hash + '&select=payload,updated_at');
+      if(!rows || rows.length === 0){
+        loginShowStatus('✓ Bienvenido — los cambios se guardarán automáticamente');
+        setTimeout(loginSkip, 1400);
+        return;
+      }
+      const payload = JSON.parse(rows[0].payload);
+      mergeImport(payload);
+      const days = Object.keys(payload.appData||{}).filter(k=>(payload.appData[k].income||[]).length||(payload.appData[k].expense||[]).length).length;
+      loginShowStatus('✓ ' + days + ' días cargados — guardado automático activado');
+      setTimeout(loginSkip, 1400);
+    }
+  } catch(e){
+    loginShowStatus('✗ ' + (e.message||'sin conexión') + ' — entrando sin sync', true);
+    setTimeout(loginSkip, 2500);
+  }
+}
+
+// On load: if already logged in show badge and skip pass field
+(function initLogin(){
+  const saved = localStorage.getItem('rest2026_syncuser');
+  if(saved){
+    document.getElementById('loginUserBadge').style.display = 'flex';
+    document.getElementById('loginUserName').textContent    = '👤 ' + saved;
+    document.getElementById('loginFields').style.display    = 'none';
+  }
+  // If hash exists from previous session, auto-save is already enabled
+  // (hash was stored on last login)
+})();
+
+renderAll();
 window.addEventListener('resize', ()=>{ if(document.getElementById('chartView').classList.contains('open')) renderChart(); });
 
 
