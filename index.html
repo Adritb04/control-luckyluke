@@ -341,16 +341,37 @@
   .form-section { margin-bottom: 14px; }
   .form-title {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-    padding-bottom: 5px;
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    margin-bottom: 8px; padding-bottom: 5px;
     border-bottom: 1px solid var(--border2);
   }
   .form-title.income-title  { color: var(--green); border-color: var(--green2); }
   .form-title.expense-title { color: var(--red3);  border-color: var(--red-dim); }
+
+  /* Form type toggle */
+  .form-type-toggle {
+    display: flex; gap: 0; margin-bottom: 4px;
+  }
+  .ftype-btn {
+    flex: 1; padding: 9px 8px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px; letter-spacing: 1px;
+    border: 1px solid var(--border2);
+    background: var(--black4); color: var(--grey3);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .ftype-btn.ftype-income.active  { background: var(--green2); border-color: var(--green2); color: var(--white); }
+  .ftype-btn.ftype-expense.active { background: var(--red);    border-color: var(--red);    color: var(--white); }
+  .ftype-btn:not(.active):hover   { color: var(--offwhite); border-color: var(--grey2); }
+
+  /* Entry error */
+  .entry-error {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: var(--red3);
+    padding: 5px 8px; margin-top: 2px;
+    background: var(--red-pale); border-left: 2px solid var(--red);
+  }
 
   .input-row { display: flex; gap: 5px; margin-bottom: 5px; }
 
@@ -1426,24 +1447,22 @@ function renderPanel(){
   document.getElementById('panelBody').innerHTML=`
     ${bankSection}
     <div class="entry-form">
-      <div class="form-section">
-        <div class="form-title income-title">▲ AGREGAR INGRESO</div>
-        <div class="input-row"><select id="incCat">${INCOME_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
-        <div class="input-row">
-          <input type="text" id="incDesc" placeholder="Descripción">
-          <input type="number" id="incAmt" placeholder="Monto" min="0" step="0.01">
-          <button class="add-btn income-btn" onclick="addEntry('${k}','income')">+</button>
-        </div>
+      <div class="form-type-toggle">
+        <button class="ftype-btn ftype-income active" id="ftypeIncome" onclick="setFormType('income')">▲ INGRESO</button>
+        <button class="ftype-btn ftype-expense" id="ftypeExpense" onclick="setFormType('expense')">▼ GASTO</button>
       </div>
-      <div class="form-section">
-        <div class="form-title expense-title">▼ AGREGAR GASTO</div>
-        <div class="input-row"><select id="expCat">${EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
-        <div class="input-row">
-          <input type="text" id="expDesc" placeholder="Descripción">
-          <input type="number" id="expAmt" placeholder="Monto" min="0" step="0.01">
-          <button class="add-btn expense-btn" onclick="addEntry('${k}','expense')">+</button>
-        </div>
+      <div class="input-row" style="margin-top:8px">
+        <select id="entryCat">${INCOME_CATS.map(c=>`<option>${c}</option>`).join('')}</select>
       </div>
+      <div class="input-row">
+        <input type="text" id="entryDesc" placeholder="Descripción (opcional)">
+      </div>
+      <div class="input-row">
+        <input type="number" id="entryAmt" placeholder="Monto $" min="0" step="0.01" style="flex:1"
+          onkeydown="if(event.key==='Enter') addEntryUnified('${k}')">
+        <button class="add-btn income-btn" id="entryAddBtn" onclick="addEntryUnified('${k}')">+ AÑADIR</button>
+      </div>
+      <div class="entry-error" id="entryError" style="display:none"></div>
     </div>
     <div class="entries-list">
       ${incRows}${expRows}
@@ -1454,11 +1473,14 @@ function renderPanel(){
       <div class="dtb-item"><div class="dtb-label">Gastos</div><div class="dtb-value r">${fmt(t.expense)}</div></div>
       <div class="dtb-item"><div class="dtb-label">Balance</div><div class="dtb-value ${bal>=0?'w':'rr'}">${bal>=0?'+':''}${fmt(bal)}</div></div>
     </div>`;
+
+  // Init toggle state
+  window._formType = 'income';
 }
 
 function saveBankBalance(k){
   const amt = parseFloat(document.getElementById('bankAmt').value);
-  if(isNaN(amt)){ alert('Ingresa un monto válido.'); return; }
+  if(isNaN(amt)){ showEntryError('Ingresa un monto válido'); return; }
   setBankBalance(k, amt);
   renderPanel(); renderCalendar();
 }
@@ -1467,13 +1489,77 @@ function clearBank(k){
   renderPanel(); renderCalendar();
 }
 
-function addEntry(k,type){
-  const cat=document.getElementById(type==='income'?'incCat':'expCat').value;
-  const desc=document.getElementById(type==='income'?'incDesc':'expDesc').value.trim();
-  const amt=parseFloat(document.getElementById(type==='income'?'incAmt':'expAmt').value);
-  if(!amt||amt<=0){alert('Ingresa un monto válido.');return;}
-  dayData(k)[type].push({cat,desc,amount:amt});
-  save(); renderPanel(); renderCalendar();
+let _formType = 'income';
+
+function setFormType(type){
+  _formType = type;
+  const incBtn  = document.getElementById('ftypeIncome');
+  const expBtn  = document.getElementById('ftypeExpense');
+  const addBtn  = document.getElementById('entryAddBtn');
+  const catSel  = document.getElementById('entryCat');
+  if(!incBtn) return;
+  if(type === 'income'){
+    incBtn.classList.add('active');    expBtn.classList.remove('active');
+    addBtn.className = 'add-btn income-btn';
+    catSel.innerHTML = INCOME_CATS.map(c=>`<option>${c}</option>`).join('');
+  } else {
+    expBtn.classList.add('active');    incBtn.classList.remove('active');
+    addBtn.className = 'add-btn expense-btn';
+    catSel.innerHTML = EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('');
+  }
+  hideEntryError();
+}
+
+function showEntryError(msg){
+  const el = document.getElementById('entryError');
+  if(!el) return;
+  el.textContent = '✗ ' + msg;
+  el.style.display = 'block';
+  setTimeout(()=>{ el.style.display='none'; }, 3000);
+}
+function hideEntryError(){
+  const el = document.getElementById('entryError');
+  if(el) el.style.display = 'none';
+}
+
+function addEntryUnified(k){
+  // Read type directly from which toggle button is active — never trust global var
+  const incBtn = document.getElementById('ftypeIncome');
+  const type   = (incBtn && incBtn.classList.contains('active')) ? 'income' : 'expense';
+  _formType    = type;
+
+  const catEl  = document.getElementById('entryCat');
+  const descEl = document.getElementById('entryDesc');
+  const amtEl  = document.getElementById('entryAmt');
+
+  const cat    = catEl  ? catEl.value  : '';
+  const desc   = descEl ? descEl.value.trim() : '';
+  const rawVal = amtEl  ? amtEl.value  : '';
+  const amt    = parseFloat(rawVal);
+
+  // Debug: remove after fix
+  console.log('[addEntry] k='+k+' type='+type+' amt='+rawVal+' parsed='+amt+' catEl='+!!catEl+' amtEl='+!!amtEl);
+
+  if(!rawVal || isNaN(amt) || amt <= 0){
+    showEntryError('Ingresa un monto válido');
+    if(amtEl) amtEl.focus();
+    return;
+  }
+
+  dayData(k)[type].push({cat, desc, amount: amt});
+  save();
+
+  if(amtEl)  { amtEl.value  = ''; amtEl.focus(); }
+  if(descEl) descEl.value = '';
+
+  renderPanel();
+  renderCalendar();
+  setTimeout(()=>{ setFormType(type); }, 0);
+}
+
+function addEntry(k, type){
+  if(type) _formType = type;
+  addEntryUnified(k);
 }
 function delEntry(k,type,i){
   dayData(k)[type].splice(i,1);
@@ -2150,17 +2236,7 @@ function renderMobilePanel(){
   document.getElementById('mobilePanelBody').innerHTML = desktopBody ? desktopBody.innerHTML : '';
 }
 
-// Keep mobile panel in sync after add/delete
-const _origAddEntry = addEntry;
-function addEntry(k,type){
-  const cat=document.getElementById(type==='income'?'incCat':'expCat').value;
-  const desc=document.getElementById(type==='income'?'incDesc':'expDesc').value.trim();
-  const amt=parseFloat(document.getElementById(type==='income'?'incAmt':'expAmt').value);
-  if(!amt||amt<=0){alert('Ingresa un monto válido.');return;}
-  dayData(k)[type].push({cat,desc,amount:amt});
-  save(); renderPanel(); renderCalendar(); renderMobilePanel();
-}
-
+// Keep mobile panel in sync after delete
 const _origDelEntry = delEntry;
 function delEntry(k,type,i){
   dayData(k)[type].splice(i,1);
