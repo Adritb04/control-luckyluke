@@ -1493,21 +1493,25 @@ let _formType = 'income';
 
 function setFormType(type){
   _formType = type;
-  const incBtn  = document.getElementById('ftypeIncome');
-  const expBtn  = document.getElementById('ftypeExpense');
-  const addBtn  = document.getElementById('entryAddBtn');
-  const catSel  = document.getElementById('entryCat');
-  if(!incBtn) return;
-  if(type === 'income'){
-    incBtn.classList.add('active');    expBtn.classList.remove('active');
-    addBtn.className = 'add-btn income-btn';
-    catSel.innerHTML = INCOME_CATS.map(c=>`<option>${c}</option>`).join('');
-  } else {
-    expBtn.classList.add('active');    incBtn.classList.remove('active');
-    addBtn.className = 'add-btn expense-btn';
-    catSel.innerHTML = EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('');
-  }
-  hideEntryError();
+  // Update both panels if they exist
+  ['panelBody','mobilePanelBody'].forEach(pid => {
+    const container = document.getElementById(pid);
+    if(!container) return;
+    const incBtn = container.querySelector('#ftypeIncome');
+    const expBtn = container.querySelector('#ftypeExpense');
+    const addBtn = container.querySelector('#entryAddBtn');
+    const catSel = container.querySelector('#entryCat');
+    if(!incBtn) return;
+    if(type === 'income'){
+      incBtn.classList.add('active');    expBtn.classList.remove('active');
+      if(addBtn) addBtn.className = 'add-btn income-btn';
+      if(catSel) catSel.innerHTML = INCOME_CATS.map(c=>`<option>${c}</option>`).join('');
+    } else {
+      expBtn.classList.add('active');    incBtn.classList.remove('active');
+      if(addBtn) addBtn.className = 'add-btn expense-btn';
+      if(catSel) catSel.innerHTML = EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('');
+    }
+  });
 }
 
 function showEntryError(msg){
@@ -1523,25 +1527,31 @@ function hideEntryError(){
 }
 
 function addEntryUnified(k){
-  // Read type directly from which toggle button is active — never trust global var
-  const incBtn = document.getElementById('ftypeIncome');
+  // Find the active panel container — mobile or desktop
+  const mobileOpen = window.innerWidth <= 768;
+  const container  = mobileOpen
+    ? document.getElementById('mobilePanelBody')
+    : document.getElementById('panelBody');
+
+  if(!container){ showEntryError('Error: panel no encontrado'); return; }
+
+  const incBtn = container.querySelector('#ftypeIncome');
   const type   = (incBtn && incBtn.classList.contains('active')) ? 'income' : 'expense';
   _formType    = type;
 
-  const catEl  = document.getElementById('entryCat');
-  const descEl = document.getElementById('entryDesc');
-  const amtEl  = document.getElementById('entryAmt');
+  const catEl  = container.querySelector('#entryCat');
+  const descEl = container.querySelector('#entryDesc');
+  const amtEl  = container.querySelector('#entryAmt');
 
   const cat    = catEl  ? catEl.value  : '';
   const desc   = descEl ? descEl.value.trim() : '';
   const rawVal = amtEl  ? amtEl.value  : '';
   const amt    = parseFloat(rawVal);
 
-  // Debug: remove after fix
-  console.log('[addEntry] k='+k+' type='+type+' amt='+rawVal+' parsed='+amt+' catEl='+!!catEl+' amtEl='+!!amtEl);
-
   if(!rawVal || isNaN(amt) || amt <= 0){
-    showEntryError('Ingresa un monto válido');
+    // Show error in the right container
+    const errEl = container.querySelector('#entryError');
+    if(errEl){ errEl.textContent='✗ Ingresa un monto válido'; errEl.style.display='block'; setTimeout(()=>errEl.style.display='none',3000); }
     if(amtEl) amtEl.focus();
     return;
   }
@@ -1554,6 +1564,7 @@ function addEntryUnified(k){
 
   renderPanel();
   renderCalendar();
+  if(mobileOpen) renderMobilePanel();
   setTimeout(()=>{ setFormType(type); }, 0);
 }
 
