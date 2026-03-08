@@ -1166,12 +1166,12 @@
       <input class="login-input" type="text" id="loginUser" placeholder="Ej: mirestaurante"
         autocomplete="username" spellcheck="false"
         onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
-
-      <label class="login-label">Contraseña</label>
-      <input class="login-input" type="password" id="loginPass" placeholder="Mínimo 4 caracteres"
-        autocomplete="current-password"
-        onkeydown="if(event.key==='Enter') loginAction('download')">
     </div>
+
+    <label class="login-label">Contraseña</label>
+    <input class="login-input" type="password" id="loginPass" placeholder="Mínimo 4 caracteres"
+      autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') loginAction('download')">
 
     <div class="login-btn-row">
       <button class="login-btn login-btn-download" onclick="loginAction('download')">📲 ENTRAR Y SINCRONIZAR</button>
@@ -2526,9 +2526,12 @@ function loginShowStatus(msg, isErr=false){
   el.style.display = 'block';
 }
 async function loginAction(action){
-  const user = (document.getElementById('loginUser').value||
-                document.getElementById('loginUserName').textContent.replace('👤 ','')||'').trim().toLowerCase();
+  // Get user from saved badge or from input field
+  const saved = localStorage.getItem('rest2026_syncuser');
+  const userInput = (document.getElementById('loginUser').value||'').trim().toLowerCase();
+  const user = saved || userInput;
   const pass = (document.getElementById('loginPass').value||'').trim();
+
   if(!user){ loginShowStatus('✗ Escribe un nombre de usuario', true); return; }
   if(pass.length < 4){ loginShowStatus('✗ La contraseña debe tener mínimo 4 caracteres', true); return; }
   localStorage.setItem('rest2026_syncuser', user);
@@ -2570,16 +2573,16 @@ async function loginAction(action){
   }
 }
 
-// On load: if already logged in show badge and skip pass field
+// On load: if already logged in show badge and skip user field
 (function initLogin(){
   const saved = localStorage.getItem('rest2026_syncuser');
   if(saved){
     document.getElementById('loginUserBadge').style.display = 'flex';
     document.getElementById('loginUserName').textContent    = '👤 ' + saved;
     document.getElementById('loginFields').style.display    = 'none';
+    // Focus password field directly
+    setTimeout(()=>{ const p=document.getElementById('loginPass'); if(p) p.focus(); }, 100);
   }
-  // If hash exists from previous session, auto-save is already enabled
-  // (hash was stored on last login)
 })();
 
 renderAll();
