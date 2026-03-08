@@ -2609,6 +2609,18 @@ window.addEventListener('resize', ()=>{ if(document.getElementById('chartView').
   localStorage.setItem('rest2026_bank', JSON.stringify(bankData));
   console.log('✓ Bank import done');
   document.getElementById('bankImportScript').remove();
+
+  // Reload into live app memory and re-render
+  try {
+    const liveApp  = JSON.parse(localStorage.getItem('rest2026') || '{}');
+    const liveBank = JSON.parse(localStorage.getItem('rest2026_bank') || '{}');
+    Object.keys(window.appData  || {}).forEach(k => delete window.appData[k]);
+    Object.keys(window.bankData || {}).forEach(k => delete window.bankData[k]);
+    Object.assign(window.appData,  liveApp);
+    Object.assign(window.bankData, liveBank);
+    if(typeof renderAll === 'function') renderAll();
+    if(typeof renderPanel === 'function') renderPanel();
+  } catch(e){ console.warn('Re-render failed:', e); }
 })();
 </script>
 </body>
