@@ -2319,23 +2319,16 @@ function buildPayload(){
 }
 
 function mergeImport(parsed){
+  // REPLACE completely — cloud is always the source of truth
   if(parsed.appData){
-    for(const [k,v] of Object.entries(parsed.appData)){
-      if(!appData[k]){ appData[k]=v; }
-      else {
-        const dedup=(arr,newArr)=>{
-          const ex=new Set(arr.map(x=>x.cat+'|'+x.desc+'|'+x.amount));
-          for(const item of newArr) if(!ex.has(item.cat+'|'+item.desc+'|'+item.amount)) arr.push(item);
-        };
-        dedup(appData[k].income,  v.income||[]);
-        dedup(appData[k].expense, v.expense||[]);
-      }
-    }
+    // Clear all local data and replace with cloud data
+    Object.keys(appData).forEach(k => delete appData[k]);
+    Object.assign(appData, parsed.appData);
     save();
   }
   if(parsed.bankData){
-    for(const [k,v] of Object.entries(parsed.bankData))
-      if(bankData[k]===undefined) bankData[k]=v;
+    Object.keys(bankData).forEach(k => delete bankData[k]);
+    Object.assign(bankData, parsed.bankData);
     saveBank();
   }
   renderAll();
